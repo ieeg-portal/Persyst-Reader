@@ -1,4 +1,32 @@
 function [hdr, data] = readPersystLay(filename, startIndex, lData, channels)
+  %READPERSYSTLAY  Reads EEG data from Persyst .lay files.
+  %
+  % [HDR, DATA] = READPERSYSTLAY('filename', STARTIDX, LDATA, CHANNELS)
+  % reads the header information and data array from the specified file.
+  % The STARTIDX is an integer specifying the first index that should be
+  % returned, LDATA is the number of values per channel that should be
+  % returned, and CHANNELS is a 1xn array of indices specifying the
+  % channels that should be returned.
+  %
+  %   Example:
+  %     [hdr, data] = readPersystLay('filename', 1, 10000, 1:10)
+
+
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  % Copyright 2013 Trustees of the University of Pennsylvania
+  % 
+  % Licensed under the Apache License, Version 2.0 (the "License");
+  % you may not use this file except in compliance with the License.
+  % You may obtain a copy of the License at
+  % 
+  % http://www.apache.org/licenses/LICENSE-2.0
+  % 
+  % Unless required by applicable law or agreed to in writing, software
+  % distributed under the License is distributed on an "AS IS" BASIS,
+  % WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  % See the License for the specific language governing permissions and
+  % limitations under the License.
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   narginchk(1,4);
   nargoutchk(1, 2);

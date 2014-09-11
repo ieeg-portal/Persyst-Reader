@@ -32,11 +32,21 @@ function [hdr, data] = readPersystLay(fileName, startIndex, lData, channels)
 
   narginchk(1,4);
   nargoutchk(1, 2);
+  returnAll = false;
+  
   
   switch nargin
     case 1
-      assert(nargout ==1, 'Incorrect number of output arguments.');
-      returnData = false;
+      startIndex = 1;
+      switch nargout
+        case 1
+          returnData = false;
+        case 2
+          returnAll = true;
+          returnData = true;
+        otherwise
+          error('Incorrect number of output arguments.');
+      end
     case 4      
       assert(nargout ==2, 'Incorrect number of output arguments.');
       returnData = true;
@@ -146,7 +156,6 @@ function [hdr, data] = readPersystLay(fileName, startIndex, lData, channels)
         end
         
         hdrStruct.(hdrs{iHdr}(2:end-1)) = FileStruct;
-        warning('Unknown header in .lay file.');
     end
   end
   
@@ -158,9 +167,21 @@ function [hdr, data] = readPersystLay(fileName, startIndex, lData, channels)
     assert(exist(datFilePath,'file')==2,'File Not Found.');
     
     nrTraces = hdr.FileInfo.WaveformCount;
-    if isempty(lData)
+    
+    if returnAll
+      nrTraces = hdrStruct.FileInfo.WaveformCount;
       lData = hdrStruct.FileInfo.nrSamples;
+      channels = 1:nrTraces;
+    else
+      if isempty(lData)
+        lData = hdrStruct.FileInfo.nrSamples;
+      end
+      if isempty(nrTraces)
+        nrTraces = hdrStruct.FileInfo.WaveformCount;
+        channels = 1:nrTraces;
+      end
     end
+    
     
     memmapOffset = (startIndex-1)*nrTraces * 2; % In bytes
     m = memmapfile(datFilePath, 'Format',{'int16' [nrTraces lData] 'x'}, ...

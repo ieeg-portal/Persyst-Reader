@@ -1,15 +1,17 @@
-function [hdr, data] = readPersystLay(filename, startIndex, lData, channels)
+function [hdr, data] = readPersystLay(fileName, startIndex, lData, channels)
   %READPERSYSTLAY  Reads EEG data from Persyst .lay files.
   %
-  % [HDR, DATA] = READPERSYSTLAY('filename', STARTIDX, LDATA, CHANNELS)
+  % [HDR, DATA] = READPERSYSTLAY('fileName', STARTIDX, LDATA, CHANNELS)
   % reads the header information and data array from the specified file.
   % The STARTIDX is an integer specifying the first index that should be
   % returned, LDATA is the number of values per channel that should be
   % returned, and CHANNELS is a 1xn array of indices specifying the
   % channels that should be returned.
   %
+  % If LDATA is an empty array. The method will return all values.
+  %
   %   Example:
-  %     [hdr, data] = readPersystLay('filename', 1, 10000, 1:10)
+  %     [hdr, data] = readPersystLay('fileName', 1, 10000, 1:10)
 
 
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -33,6 +35,14 @@ function [hdr, data] = readPersystLay(filename, startIndex, lData, channels)
   
   switch nargin
     case 1
+      switch nargout
+        case 1
+          returnData = false;
+        case 2
+          returnAll
+        otherwise
+          error('Incorrect number of output arguments.');
+      end
       assert(nargout ==1, 'Incorrect number of output arguments.');
       returnData = false;
     case 4      
@@ -43,11 +53,11 @@ function [hdr, data] = readPersystLay(filename, startIndex, lData, channels)
   end
 
   % Check files
-  [folder, file,ext] = fileparts(filename);
-  assert(strcmp(ext,'.lay'),'Select ''.lay'' file as the filename.');
+  [folder, file,ext] = fileparts(fileName);
+  assert(strcmp(ext,'.lay'),'Select ''.lay'' file as the fileName.');
   
   % Create Header structure:
-  h = fopen(filename,'r');
+  h = fopen(fileName,'r');
   header = fscanf(h,'%c');
   
   % Get headers 
@@ -71,7 +81,12 @@ function [hdr, data] = readPersystLay(filename, startIndex, lData, channels)
           end
         end
         
-        
+        try
+        aux = dir(fullfile(folder, sprintf('%s.dat',file)));
+        FileStruct.nrSamples = aux.bytes/(FileStruct.WaveformCount*2);
+        catch ME
+          error('WaveformCount not specified in .lay file');
+        end
         
         hdrStruct.FileInfo = FileStruct;
         
@@ -130,7 +145,15 @@ function [hdr, data] = readPersystLay(filename, startIndex, lData, channels)
         hdrStruct.SampleTimes = a;
         
       otherwise
-        warning('Unknown header in .lay file.');
+        curStr = header((hdrIdx(iHdr) + length(hdrs{iHdr})):(hdrIdx(iHdr+1)-1) );
+        a = regexp(curStr,'\s*(?<key>[^=]+)=(?<value>[^\n]+)','names');
+        
+        FileStruct = struct();
+        for i = 1:length(a)
+          FileStruct.(a(i).key) = deblank(a(i).value);
+        end
+        
+        hdrStruct.(hdrs{iHdr}(2:end-1)) = FileStruct;
     end
   end
   
@@ -142,9 +165,13 @@ function [hdr, data] = readPersystLay(filename, startIndex, lData, channels)
     assert(exist(datFilePath,'file')==2,'File Not Found.');
     
     nrTraces = hdr.FileInfo.WaveformCount;
+    if isempty(lData)
+      lData = hdrStruct.FileInfo.nrSamples;
+    end
+    
     memmapOffset = (startIndex-1)*nrTraces * 2; % In bytes
-    m = memmapfile(datFilePath, 'Format',{'int16' [nrTraces 1] 'x'}, ...
-      'Offset',memmapOffset,'Repeat',Inf);
+    m = memmapfile(datFilePath, 'Format',{'int16' [nrTraces lData] 'x'}, ...
+      'Offset',memmapOffset,'Repeat',1);
     
     % Check if continuous:
     

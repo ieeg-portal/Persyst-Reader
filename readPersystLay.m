@@ -137,6 +137,15 @@ function [hdr, data] = readPersystLay(fileName, startIndex, lData, channels)
         hdrStruct.SampleTimes = a;
         
       otherwise
+        curStr = header((hdrIdx(iHdr) + length(hdrs{iHdr})):(hdrIdx(iHdr+1)-1) );
+        a = regexp(curStr,'\s*(?<key>[^=]+)=(?<value>[^\n]+)','names');
+        
+        FileStruct = struct();
+        for i = 1:length(a)
+          FileStruct.(a(i).key) = deblank(a(i).value);
+        end
+        
+        hdrStruct.(hdrs{iHdr}(2:end-1)) = FileStruct;
         warning('Unknown header in .lay file.');
     end
   end
